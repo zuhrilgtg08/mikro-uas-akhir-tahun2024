@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <!-- Styles CSS -->
+    <link rel="stylesheet" href="css/styles.css" />
+    <title>Zuhril | Danny IOT Irrigation</title>
+  </head>
+  <body>
+    <header>
+      <nav class="navbar">
+        <div class="navbar-logo">IOT Irrigation</div>
+        <div class="navbar-menu" id="navbarMenu">
+          <a href="/" class="navbar-item">Home</a>
+          <a href="#" class="navbar-item">About</a>
+          <a href="#" class="navbar-item">Services</a>
+          <a href="#" class="navbar-item">Contact</a>
+        </div>
+        <div class="navbar-toggle" id="navbarToggle">
+          <span class="bar"></span>
+          <span class="bar"></span>
+          <span class="bar"></span>
+        </div>
+      </nav>
+    </header>
+
+    <main>
+      <h1>Prototype Automation Irrigation</h1>
+      <section class="card-container">
+        <div class="card">
+          <img
+            src="img/led-off.png"
+            id="imgLamp"
+            alt="Card Image"
+            class="card-image"
+          />
+          <div class="card-content">
+            <h3 class="card-title">Lampu Ruangan</h3>
+            <p class="card-description">
+              Mengontrol lampu dalam Ruangan, menyalakan dan mematikan lampu.
+            </p>
+            <button class="card-btn" onclick="setLampuRuangan()" id="btnLamp">
+              Turn Off
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <img
+            src="img/vent-off.png"
+            id="imgVent"
+            alt="Card Image"
+            class="card-image"
+          />
+          <div class="card-content">
+            <h3 class="card-title">Ventilasi Udara</h3>
+            <p class="card-description">
+              Mengontrol Servo Ventilasi Ruangan, menyalakan dan mematikan
+              Servo.
+            </p>
+            <button
+              class="card-btn"
+              onclick="setKontrolVentilasi()"
+              id="btnVent"
+            >
+              Turn Off
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <img
+            src="img/pump-off.png"
+            id="imgPump"
+            alt="Card Image"
+            class="card-image"
+          />
+          <div class="card-content">
+            <h3 class="card-title">Pump Air</h3>
+            <p class="card-description">
+              Mengontrol Pompa Air didalam Tanki, menyalakan dan mematikan pump.
+            </p>
+            <button class="card-btn" onclick="setKontrolPompa()" id="btnPump">
+              Turn Off
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <img
+            src="img/water-off.png"
+            id="imgWater"
+            alt="Card Image"
+            class="card-image"
+          />
+          <div class="card-content">
+            <h3 class="card-title">Servo Irigasi</h3>
+            <p class="card-description">
+              Mengontrol Servo Irigasi ketika kelembapan tanah dibawah 70%
+            </p>
+            <button
+              class="card-btn"
+              onclick="setKontrolIrigasi()"
+              id="btnWater"
+            >
+              Turn Off
+            </button>
+          </div>
+        </div>
+      </section>
+      <h1>Monitoring Data Sensor</h1>
+      <section class="card-container">
+        <div class="card-graph">
+          <canvas id="myChart" width="400" height="200"></canvas>
+        </div>
+        <!-- <div id="dataDisplay"></div> -->
+      </section>
+    </main>
+
+    <!-- Main Js -->
+    <script src="js/scripts.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+     <script src="js/chart.js"></script>
+    <script>
+      const ctx = document.getElementById("myChart").getContext("2d");
+      const labels = ["LDR", "HC-SR04", "SOIL MOISTURE", "DHT11"];
+      const sensorData = Array(labels.length).fill(0);
+
+      const myChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Nilai Sensor: ",
+              data: Array(labels.length).fill(0),
+              backgroundColor: [
+                "rgba(255, 99, 132, 1)",
+                "rgba(54, 162, 235, 1)",
+                "rgba(255, 206, 86, 1)",
+                "rgba(75, 192, 192, 1)",
+              ],
+            },
+          ],
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+            },
+          },
+        },
+        animations: {
+          tension: {
+            duration: 300,
+            easing: "linear",
+            from: 1,
+            to: 0,
+            loop: true,
+          },
+        },
+      });
+
+      let currentIndex = 0;
+      function fetchData() {
+        fetch(mainURL + "/sendDataArduino")
+          .then((response) => response.text())
+          .then((data) => {
+            const values = data.split("_");
+            // console.log(values);
+
+            if (values.length === 4) {
+              const sensor1 = parseInt(values[0]);
+              const sensor2 = parseFloat(values[1]) * 100;
+              const sensor3 = parseFloat(values[2]);
+              const sensor4 = parseFloat(values[3]);
+
+              // Tambahkan data ke grafik
+              sensorData[0] = sensor1;
+              sensorData[1] = sensor2;
+              sensorData[2] = sensor3;
+              sensorData[3] = sensor4;
+
+              // Update perubahan data sensor
+              for (let i = 0; i < sensorData.length; i++) {
+                myChart.data.datasets[0].data[i] = sensorData[i];
+              }
+              myChart.update();
+            }
+          })
+          .catch((error) => console.error("Error fetching data:", error));
+      }
+      document.addEventListener("DOMContentLoaded", function () {
+        setInterval(function () {
+          fetchData();
+          // location.reload();
+        }, 3500);
+        // setInterval(fetchData(), 3000);
+      });
+    </script>
+  </body>
+</html>
